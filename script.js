@@ -1,5 +1,7 @@
 
-let canvas, ctx, height, width, noOfRows, noOfColumns, preciseMouseClick = 13, fieldWidth = 90, fieldHeight = 30, cell;
+let canvas, ctx, height, width, noOfRows, noOfColumns, preciseMouseClick = 13, fieldWidth = 90, fieldHeight = 30, cell,
+topPadding = -15, leftPadding = 10;
+let pos = [];
 let alphabets = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','W','X','Y','Z'];
 
 const input = document.getElementById("inputText");
@@ -46,7 +48,7 @@ const fillColumnText = () => {
   let x = fieldWidth, y = fieldHeight;
   for(let i = 1; i < noOfRows ; i++) {
     ctx.font = "20px Georgia";
-    ctx.fillText(i,x/2,y+30/2+5);
+    ctx.fillText(i,x/2,y+fieldHeight/2+5);
     y += fieldHeight;
   }
 }
@@ -56,7 +58,6 @@ const getPosition = (event) =>
 {
   let x = event.x;
   let y = event.y;
-  // console.log(x + ' ' + y);
   let canvas = document.getElementById("canvas");
   // x -= canvas.offsetLeft;
   // y -= canvas.offsetTop;
@@ -64,10 +65,14 @@ const getPosition = (event) =>
   y -= preciseMouseClick;
   [x, y] = moveInputLocation(x,y);
   cell = `${alphabets[x - 1]}${y}`;
-  // console.log("x:" + x + " y:" + y);
-  // console.log(cell);
-  
 
+  if(data[cell] !== undefined) {
+    input.value = data[cell];
+  } else {
+    input.value = "";
+  }
+
+  pos = [x,y];
 }
 
 // implementation of moving input field over canvas
@@ -77,20 +82,60 @@ const moveInputLocation = (x,y) => {
   y = Math.floor(y/fieldHeight);
   overlay.style.left = x * fieldWidth + 'px';
   overlay.style.top = y * fieldHeight + 'px';
-
   return [x, y];
 
 }
 
-const fillData = () => {
+// store field data in array data structure
+const storeData = () => {
+  data[cell] = input.value;
+  input.value = "";
+  input.style.display = "none";
+
+}
+
+// add item to data array and draw over canvas
+const addItem = () => {
+  
   input.addEventListener('keyup', (event) => {
     if(event.keyCode === 13) {
       console.log(cell);
-      data[cell] = input.value;
-      input.style.display = "none";
+      
+      let [x , y] = pos;
+
+      storeData();
+
+      updateSheet();
     }
   });
 
+  
+}
+
+const clearCanvas = () => {
+  ctx.clearRect(0 , 0, canvas.width, canvas.height);
+}
+
+// UI to draw data over spreadsheet
+const updateSheet = () => {
+  clearCanvas();
+  drawRows();
+  drawColoums();
+  fillRowText();
+  fillColumnText();
+
+  //draw all data array item to sheet
+  const iterator = Object.keys(data);
+  for (const key of iterator) {
+    
+    const x = alphabets.findIndex((cur) => cur == key.charAt(0)) + 1;
+    const y = key.match(/(\d+)/g);
+    ctx.font = "20px Georgia";
+    ctx.fillText(data[key],(x * fieldWidth) + fieldWidth / 3, (y * fieldHeight) + fieldHeight - (fieldHeight / 3));
+
+  }
+     
+ 
 }
 
 // initialize the canvas with spreadsheet
@@ -110,15 +155,13 @@ const init = () =>
   fillRowText();
   fillColumnText();
 
+  canvas.addEventListener("mousedown", getPosition, false);
 
   input.style.height = `${fieldHeight - 3}px`;
   input.style.width = `${fieldWidth - 5}px`;
-  console.log(input.value);
-  fillData();
-  canvas.addEventListener("mousedown", getPosition, false);
+  addItem();
     
 }
 
 init();
-
 
